@@ -170,6 +170,15 @@ namespace pubsub
         }
         private void RemoveFromParent()
         {
+            // This point, we need another 'lock' here.
+            // In case,
+            //    1. The 'RefCount' has decreased and becomes zero.
+            //    2. 'RemoveFromParent' will be called
+            //    3. Swich to the another thread.
+            //    4. The thread will 'Add' a new subsrbier.
+            //    5. 'RefCount' will be one or above.
+            //    6. Swich back to current context.
+            //    7. 'RefCount' is not zero, but it will perform destruction routine.
             lock (SyncRoot)
             {
                 if (RefCount > 0)
@@ -209,6 +218,8 @@ namespace pubsub
         public Pubsub()
         {
             this.Root = new Node(null, 0, -1);
+            
+            // Each threads has its own thread-local-cache storage. 
             this.PathCache = new ThreadLocal<Dictionary<string, WeakReference<Channel>>>(
                 ()=>{
                     return new Dictionary<string, WeakReference<Channel>>();
@@ -225,13 +236,17 @@ namespace pubsub
             {
                 if(weakChannel.TryGetTarget(out channel))
                 {
+                    // Best case, target already cached and alive.
                     return channel;
                 }
 
+                // Second case, the GC collected the target object.
+                // We should re-create cache.
                 channel = new Channel(path);
                 weakChannel.SetTarget(channel);
                 return channel;
             }
+
             channel = new Channel(path);
             localPathCache.Add(path, new WeakReference<Channel>(channel));
             return channel;
