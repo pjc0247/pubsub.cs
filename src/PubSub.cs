@@ -33,6 +33,7 @@ namespace pubsub
     public class Node
     {
         private ConcurrentDictionary<int, Node> Children { get; set; }
+        // since there's no 'ConcurrentSet' in .Net 4.5, use 'ConcurrentDictionary<T,T>' instead.
         private ConcurrentDictionary<object, object> Subscribers { get; set; }
 
         private Node Parent { get; set; }
