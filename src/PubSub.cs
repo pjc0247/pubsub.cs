@@ -43,6 +43,8 @@ namespace pubsub
         private long RefCount;
         private object SyncRoot { get; set; }
 
+        private static readonly int Asterisk = "*".GetHashCode();
+
         public Node(Node parent, int key, int depth)
         {
             this.Parent = parent;
@@ -147,13 +149,25 @@ namespace pubsub
             {
                 int key = hashPath[Depth + 1];
                 Node node;
-                if (!Children.TryGetValue(key, out node))
-                {
-                    yield break;
-                }
 
-                foreach (var item in node.QuerySubscribers(hashPath))
-                    yield return item;
+                if(key == Asterisk)
+                {
+                    foreach(var child in Children)
+                    {
+                        foreach (var item in child.Value.QuerySubscribers(hashPath))
+                            yield return item;
+                    }
+                }
+                else
+                {
+                    if (!Children.TryGetValue(key, out node))
+                    {
+                        yield break;
+                    }
+
+                    foreach (var item in node.QuerySubscribers(hashPath))
+                        yield return item;
+                }
             }
         }
 
@@ -323,7 +337,7 @@ namespace pubsub
             p.Subscribe("a.b.e", new object());
             ///p.Unsubscribe("a.b.c", obj2);
 
-            p.Publish("a.b.c", "A");
+            p.Publish("a.b.*", "A");
 
             p.Print();
 
