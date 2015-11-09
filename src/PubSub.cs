@@ -76,7 +76,7 @@ namespace pubsub
             else
             {
                 IncRefCount();
-
+        
                 int key = hashPath[Depth + 1];
                 Node node;
                 if (!Children.TryGetValue(key, out node))
@@ -102,7 +102,8 @@ namespace pubsub
         {
             if (hashPath.Length < Depth)
                 throw new InvalidOperationException();
-
+            
+            // 'Remove' routine is a quite simple.
             if (hashPath.Length == Depth + 1)
             {
                 object obj;
