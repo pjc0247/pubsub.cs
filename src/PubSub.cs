@@ -63,9 +63,11 @@ namespace pubsub
             {
                 IncRefCount();
 
+                // In this case, subscriber already exists in the collection.
                 if (!Subscribers.TryAdd(subscriber, subscriber))
                 {
                     DecRefCount();
+
                     throw new InvalidOperationException();
                 }
             }
@@ -77,8 +79,11 @@ namespace pubsub
                 Node node;
                 if (!Children.TryGetValue(key, out node))
                 {
+                    // 'lock' must be placed here,
+                    //  cause there is a potential problem which makes a orpahned node.
                     lock (SyncRoot)
                     {
+                        // double-checking for reducing the overheads from 'lock'
                         if(!Children.TryGetValue(key, out node))
                         {
                             node = new Node(this, key, Depth + 1);
@@ -259,7 +264,7 @@ namespace pubsub
 
     class Program
     {
-        static void __Main(string[] args)
+        static void Main(string[] args)
         {
             Pubsub p = new Pubsub();
 
@@ -311,6 +316,8 @@ namespace pubsub
             p.Unsubscribe("a.b.c", obj2);
 
             p.Print();
+
+            System.Collections.Queue q = new System.Collections.Queue();
         }
     }
 }
